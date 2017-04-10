@@ -113,15 +113,27 @@ def andrews_films_and_leads
   # Andrews' played in.
   execute(<<-SQL)
   SELECT
-    *
+    title, a1.name
   FROM
     movies
-  JOIN
-    castings ON movies.id = castings.movie_id
-  JOIN
-    actors ON castings.actor_id = actors.id
+    JOIN
+    castings AS c1
+      ON movies.id = c1.movie_id
+    JOIN
+    actors AS a1
+      ON a1.id = c1.actor_id
   WHERE
-    actors.name = 'Sean Connery'
+    ord = 1 AND movie_id IN (
+        SELECT
+        movie_id
+        FROM
+        castings
+        JOIN
+          actors AS a2
+          ON a2.id = castings.actor_id
+        WHERE
+          a2.name = 'Julie Andrews'
+        )
   SQL
 end
 
@@ -130,15 +142,17 @@ def prolific_actors
   # starring roles.
   execute(<<-SQL)
   SELECT
-    *
+    name
   FROM
-    movies
-  JOIN
-    castings ON movies.id = castings.movie_id
-  JOIN
-    actors ON castings.actor_id = actors.id
+    actors
+    JOIN castings AS c1 ON actors.id = c1.actor_id
   WHERE
-    actors.name = 'Sean Connery'
+    c1.ord = 1
+  GROUP BY
+    name
+    HAVING
+      COUNT(c1.actor_id) >= 15
+  ORDER BY name ASC
   SQL
 end
 
@@ -147,15 +161,19 @@ def films_by_cast_size
   # in the cast (descending), then by title (ascending).
   execute(<<-SQL)
   SELECT
-    *
+    movies.title, COUNT(movies.title)
   FROM
     movies
   JOIN
-    castings ON movies.id = castings.movie_id
-  JOIN
-    actors ON castings.actor_id = actors.id
+    castings AS c1 ON movies.id = c1.movie_id
+    JOIN
+    actors AS a1 ON c1.actor_id = a1.id
   WHERE
-    actors.name = 'Sean Connery'
+    movies.yr = 1978
+  GROUP BY
+  movies.title
+  ORDER BY
+    COUNT(movies.title) DESC, movies.title ASC
   SQL
 end
 
@@ -163,14 +181,21 @@ def colleagues_of_garfunkel
   # List all the people who have played alongside 'Art Garfunkel'.
   execute(<<-SQL)
   SELECT
-    *
+    name
   FROM
-    movies
-  JOIN
-    castings ON movies.id = castings.movie_id
-  JOIN
-    actors ON castings.actor_id = actors.id
+    actors
+    JOIN
+      castings AS c1 ON actors.id = c1.actor_id
   WHERE
-    actors.name = 'Sean Connery'
+    name != 'Art Garfunkel' AND movie_id in (
+      SELECT
+      movie_id
+      FROM
+      castings
+      JOIN
+        actors AS a2 ON a2.id = castings.actor_id
+      WHERE
+        a2.name = 'Art Garfunkel'
+    )
   SQL
 end
