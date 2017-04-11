@@ -61,24 +61,20 @@ def large_neighbors
   # neighbors (in the same continent). Give the countries and continents.
   execute(<<-SQL)
   SELECT
-  countries.name,
-  countries.continent
+  c1.name,
+  c1.continent
   FROM
-    countries
-    JOIN
-      (SELECT
-      continent,
-      MIN(population)
-      FROM
-        countries
-      GROUP BY
-        continent
-    ) as min_con ON (min_con.continent = countries.continent)
-    JOIN
-      countries b ON (min_con.min =  b.population)
+    countries c1
   WHERE
-    countries.population > (min_con.min*3)
-  GROUP BY
-    countries.name
+    c1.population > (
+      SELECT
+      MAX(c2.population)*3
+      FROM
+      countries c2
+      WHERE
+        (c1.name != c2.name
+        and c1.continent = c2.continent)
+    )
+
   SQL
 end
